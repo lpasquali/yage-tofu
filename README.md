@@ -16,6 +16,7 @@ Each subdirectory is a self-contained OpenTofu module that mints a scoped runtim
 | IBM Cloud | `ibmcloud/` | Service ID + API key |
 | Linode | `linode/` | Personal Access Token (scoped) |
 | Proxmox VE | `proxmox/` | PVE user + token (migrated from opentofux) |
+| Registry (Phase H) | `registry/` | Proxmox VM running Harbor or Zot (ADR 0009) |
 
 ## Usage
 

@@ -1,0 +1,69 @@
+#cloud-config
+# SPDX-License-Identifier: Apache-2.0
+# yage-tofu/registry/ cloud-init bootstrap.
+# Installs ${registry_flavor} on first boot and serves it on :443.
+# Image seeding (CAPI/CNI/Helm) remains an operator step in Phase H.
+
+hostname: ${registry_hostname}
+fqdn: ${registry_hostname}
+manage_etc_hosts: true
+
+package_update: true
+package_upgrade: false
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - docker.io
+  - docker-compose-v2
+
+write_files:
+  - path: /etc/yage/registry/tls.crt
+    permissions: "0644"
+    owner: root:root
+    encoding: text/plain
+    content: |
+      ${indent(6, registry_tls_cert_pem)}
+  - path: /etc/yage/registry/tls.key
+    permissions: "0600"
+    owner: root:root
+    encoding: text/plain
+    content: |
+      ${indent(6, registry_tls_key_pem)}
+  - path: /usr/local/share/ca-certificates/yage-internal.crt
+    permissions: "0644"
+    owner: root:root
+    encoding: text/plain
+    content: |
+      ${indent(6, registry_ca_bundle_pem)}
+  - path: /etc/yage/registry/flavor
+    permissions: "0644"
+    owner: root:root
+    content: ${registry_flavor}
+
+runcmd:
+  - update-ca-certificates
+  - systemctl enable --now docker
+  - mkdir -p /opt/yage-registry /var/lib/yage-registry
+  - |
+    case "${registry_flavor}" in
+      harbor)
+        cd /opt/yage-registry
+        curl -fsSL -o harbor.tgz https://github.com/goharbor/harbor/releases/download/v2.11.0/harbor-offline-installer-v2.11.0.tgz
+        tar xzf harbor.tgz --strip-components=1
+        sed -i "s|^hostname:.*|hostname: ${registry_hostname}|" harbor.yml.tmpl
+        sed -i "s|^harbor_admin_password:.*|harbor_admin_password: ${registry_admin_password}|" harbor.yml.tmpl
+        sed -i "s|^  certificate:.*|  certificate: /etc/yage/registry/tls.crt|" harbor.yml.tmpl
+        sed -i "s|^  private_key:.*|  private_key: /etc/yage/registry/tls.key|" harbor.yml.tmpl
+        cp harbor.yml.tmpl harbor.yml
+        ./install.sh --with-trivy
+        ;;
+      zot)
+        docker run -d --name zot --restart=always \
+          -p 443:8443 \
+          -v /etc/yage/registry:/etc/zot/tls:ro \
+          -v /var/lib/yage-registry:/var/lib/registry \
+          ghcr.io/project-zot/zot-linux-amd64:v2.1.0 \
+          serve /etc/zot/config.json
+        ;;
+    esac
