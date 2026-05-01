@@ -16,7 +16,7 @@ provider "proxmox" {
 }
 
 resource "proxmox_virtual_environment_role" "capi" {
-  role_id   = "CAPI.${var.cluster_name}"
+  role_id = "CAPI.${var.cluster_name}"
   privileges = [
     "VM.Allocate", "VM.Clone", "VM.Config.CDROM", "VM.Config.CPU",
     "VM.Config.Cloudinit", "VM.Config.Disk", "VM.Config.HWType",
@@ -32,15 +32,15 @@ resource "proxmox_virtual_environment_user" "capi" {
 }
 
 resource "proxmox_virtual_environment_acl" "capi" {
-  user_id = proxmox_virtual_environment_user.capi.user_id
-  role_id = proxmox_virtual_environment_role.capi.role_id
-  path    = "/"
+  user_id   = proxmox_virtual_environment_user.capi.user_id
+  role_id   = proxmox_virtual_environment_role.capi.role_id
+  path      = "/"
   propagate = true
 }
 
 resource "proxmox_virtual_environment_user_token" "capi" {
-  user_id    = proxmox_virtual_environment_user.capi.user_id
-  token_name = "capi"
-  comment    = "yage CAPI token"
+  user_id               = proxmox_virtual_environment_user.capi.user_id
+  token_name            = "capi"
+  comment               = "yage CAPI token"
   privileges_separation = false
 }
