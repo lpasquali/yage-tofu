@@ -15,7 +15,5 @@ provider "openstack" {
 resource "openstack_identity_application_credential_v3" "capi" {
   name        = "yage-capi-${var.cluster_name}"
   description = "yage CAPI bootstrap credential for cluster ${var.cluster_name}"
-  roles {
-    name = "member"
-  }
+  roles       = ["member"]
 }
